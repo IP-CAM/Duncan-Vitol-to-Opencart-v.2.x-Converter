@@ -1,3 +1,12 @@
+<?php
+// temp
+function pre($array)
+{
+    echo '<pre>';
+        print_r($array);
+    echo '</pre>';
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -21,127 +30,135 @@ todo:
 крок 4: кнопка виробників
 крок 5: кнопка товарів
 крок 6: видалення файлу і вигрузка
+
+todo: 7: видалення файлу через 10 хвилин
 */
 
-$message = '';
+$message = ''; // del?
 
 if(isset($_FILES[file_xml])){
     if($_FILES[file_xml][type] === 'text/xml'){
 
+        // файл
         $name = $_FILES[file_xml][name];
+
+        // папка
         $folder = $_FILES[file_xml][tmp_name];
 
         if(is_uploaded_file($folder)){
-            // move_uploaded_file($folder, "./upload/$name");
-            if(move_uploaded_file($folder, "./upload/$name")){
-                // debug
-                echo 'file ' . $name . ' uploaded!' . '<br><br>';
-            }
+            move_uploaded_file($folder, "./upload/$name");
         }
 
+        // якщо файл існує
         if (file_exists("./upload/$name")) {
 
-            // debug
-            echo 'file' . $name . ' is exists <br><br>';
-
-            $xml = simplexml_load_file("./upload/$name");
-
-            $categories = $xml->categories->category;
-
-            $time = time();
-            $dump = '';
-            foreach($categories as $category){
-                $dump .=  "INSERT INTO `oc_category` VALUES ($category[id],'',0,0,0,0,1,$time,$time);";
-                $cat = mb_strtoupper($category);
-                $dump .=  "INSERT INTO `oc_category_description` VALUES ($category[id],1,'$cat','','','','','');";
+            // видаляємо, якщо була підміна типу
+            if(mime_content_type("./upload/$name") != 'text/xml'){
+                unlink("./upload/$name");
+                exit();
             }
-            // echo $dump, '<hr>';
+
+            // основна змінна
+            $xml = simplexml_load_file("./upload/$name");
 
             // goods
             $items = $xml->items->item;
 
+            // часова мітка
+            $time = date('Y-m-d h:i:s', time());
+
+            // основний файл дампу
+            $dump = '';
+
+            // виробники
+            $manufactured = [];
             foreach($items as $item){
-                // echo $item->categoryId, '<br>';
-                echo $item->vendor, '<br>';
+                array_push($manufactured, $item->vendor);
+            }
+            $manufactured = array_values(array_unique($manufactured, SORT_LOCALE_STRING));
+            foreach($manufactured as $key => $val){
+                $dump .= "INSERT INTO `oc_manufacturer` VALUES ($key,'$val','',0);";
             }
 
-/* 
-            INSERT INTO `oc_product` VALUES (
-                28,
-                'Товар 1',
-                '',
-                '',
-                '',
-                '',
-                '',
-                '',
-                '',
-                939, -- кількість
-                7,
-                'catalog/demo/htc_touch_hd_1.jpg',
-                5,
-                1,
-                100.0000,
-                200,9,
-                '2009-02-03',
-                146.40,
-                2,
-                0.00,
-                0.00,
-                0.00,
-                1,
-                1,
-                1,
-                0,
-                1,
-                0,
-                '2009-02-03 16:06:50',
-                '2011-09-30 01:05:39');
- */
-/* 
-            CREATE TABLE `oc_product` (
-                `product_id` int(11) NOT NULL AUTO_INCREMENT,
-                `model` varchar(64) NOT NULL,
-                `sku` varchar(64) NOT NULL,
-                `upc` varchar(12) NOT NULL,
-                `ean` varchar(14) NOT NULL,
-                `jan` varchar(13) NOT NULL,
-                `isbn` varchar(17) NOT NULL,
-                `mpn` varchar(64) NOT NULL,
-                `location` varchar(128) NOT NULL,
-                `quantity` int(4) NOT NULL DEFAULT '0',
-                `stock_status_id` int(11) NOT NULL,
-                `image` varchar(255) DEFAULT NULL,
-                `manufacturer_id` int(11) NOT NULL,
-                `shipping` tinyint(1) NOT NULL DEFAULT '1',
-                `price` decimal(15,4) NOT NULL DEFAULT '0.0000',
-                `points` int(8) NOT NULL DEFAULT '0',
-                `tax_class_id` int(11) NOT NULL,
-                `date_available` date NOT NULL DEFAULT '0000-00-00',
-                `weight` decimal(15,2) NOT NULL DEFAULT '0.00',
-                `weight_class_id` int(11) NOT NULL DEFAULT '0',
-                `length` decimal(15,2) NOT NULL DEFAULT '0.00',
-                `width` decimal(15,2) NOT NULL DEFAULT '0.00',
-                `height` decimal(15,2) NOT NULL DEFAULT '0.00',
-                `length_class_id` int(11) NOT NULL DEFAULT '0',
-                `subtract` tinyint(1) NOT NULL DEFAULT '1',
-                `minimum` int(11) NOT NULL DEFAULT '1',
-                `sort_order` int(11) NOT NULL DEFAULT '0',
-                `status` tinyint(1) NOT NULL DEFAULT '0',
-                `viewed` int(5) NOT NULL DEFAULT '0',
-                `date_added` datetime NOT NULL,
-                `date_modified` datetime NOT NULL,
-                PRIMARY KEY (`product_id`)
-              ) ENGINE=MyISAM AUTO_INCREMENT=50 DEFAULT CHARSET=utf8;
- */
+            // категорії
+            $categories = $xml->categories->category;
+
+            foreach($categories as $category){
+                $dump .=  "INSERT INTO `oc_category` VALUES ($category[id],'',0,0,0,0,1,'$time','$time');";
+                $cat = mb_strtoupper($category);
+                $dump .=  "INSERT INTO `oc_category_description` VALUES ($category[id],1,'$cat','','','','','');";
+            }
+
+            // товари
+            $products = '';
+
+            // айді товара
+            $id = 1;
+            foreach($items as $item){
+                $id++;
+                $dump .= "INSERT INTO `oc_product` VALUES (
+                    $id,
+                    '$item->art',
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    999, -- quantity
+                    1, -- stock_status_id
+                    '$item->image',
+                    5, -- manufactured 
+                    1, -- shipping
+                    $item->price, -- price
+                    0, -- points
+                    9, -- tax_class_id
+                    '$time', -- date_available
+                    0, -- weight
+                    2, -- weight_class_id
+                    0.00, -- length
+                    0.00, -- width
+                    0.00, -- height
+                    1, -- length_class_id
+                    1, -- subtract
+                    1, -- minimum
+                    0, -- sort_order
+                    1, -- status
+                    0,
+                    '$time', -- date_added
+                    '$time' -- date_modified
+                );";
+                $dump .= "INSERT INTO `oc_product_description` VALUES (
+                    $id,
+                    1,
+                    '$item->name',
+                    '$item->fulldescription',
+                    '',
+                    '$item->name',
+                    '',
+                    '',
+                    ''
+                );";
+
+                foreach($item->extraimage as $image_id => $images){
+                    $dump .= "INSERT INTO `oc_product_image` VALUES (
+                        $image_id, -- product_image_id
+                        $id, -- product_id
+                        '$images', -- image
+                        0
+                    );";
+                }
+                
+            }
+            
 
 
 
 
 
-
-
-
+            // view
+            echo '<textarea style="width:100%;height:600px;resize:vertical;margin:10px 0 0">'. $dump .'</textarea>';
 
 
         } else {
@@ -150,9 +167,22 @@ if(isset($_FILES[file_xml])){
 
     }
 }
+
 ?>
-<p>Пам'ять: 
-<?=memory_get_usage()?>
-</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<p style="position:fixed;top:0;right:0;background:maroon;padding:5px;color:white;font-weight:bold">Пам'ять: <?=memory_get_usage()?></p>
 </body>
 </html>
