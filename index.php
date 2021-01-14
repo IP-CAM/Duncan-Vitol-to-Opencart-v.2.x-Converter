@@ -47,12 +47,7 @@ if(isset($_FILES[file_xml])){
             $time = date('Y-m-d h:i:s', time());
 
             // основний файл дампу
-            $dump = 'TRUNCATE TABLE oc_manufacturer;
-            TRUNCATE TABLE oc_category;
-            TRUNCATE TABLE oc_category_description;
-            TRUNCATE TABLE oc_product;
-            TRUNCATE TABLE oc_product_description;
-            TRUNCATE TABLE oc_product_image;';
+            $dump = 'TRUNCATE TABLE oc_manufacturer;TRUNCATE TABLE oc_category;TRUNCATE TABLE oc_category_description;TRUNCATE TABLE oc_product;TRUNCATE TABLE oc_product_description;TRUNCATE TABLE oc_product_image;' . PHP_EOL;
 
             // виробники
             $manufactured = [];
@@ -64,7 +59,8 @@ if(isset($_FILES[file_xml])){
             $manufactured = array_values(array_unique($manufactured, SORT_LOCALE_STRING));
 
             foreach($manufactured as $key => $val){
-                $dump .= "INSERT INTO `oc_manufacturer` VALUES ($key+1,'$val','',0);" . PHP_EOL;
+                $num = (int)$key + 1;
+                $dump .= "INSERT INTO `oc_manufacturer` VALUES ($num,'$val','',0);" . PHP_EOL;
             }
 
             // категорії
@@ -73,7 +69,7 @@ if(isset($_FILES[file_xml])){
             foreach($categories as $category){
                 $dump .=  "INSERT INTO `oc_category` VALUES ($category[id],'',0,0,0,0,1,'$time','$time');";
 
-                $cat = addcslashes(mb_strtoupper($category));
+                $cat = addslashes(mb_strtoupper($category));
 
                 $dump .=  "INSERT INTO `oc_category_description` VALUES ($category[id],1,'$cat','','','','','');" . PHP_EOL;
             }
@@ -91,15 +87,16 @@ if(isset($_FILES[file_xml])){
 
                 $dump .= "INSERT INTO `oc_product` VALUES ($item->partnumber,'$item->art','','','','','','','',999,1,'$item->image',$id_manufactured,1,$item->price,0,1,'$time',0,2,0.00,0.00,0.00,1,1,1,0,1,0,'$time','$time');" . PHP_EOL;
 
-                $description = addcslashes($item->fulldescription);
+                $product_description = addslashes($item->fulldescription);
+                $product_name = addslashes($item->name);
 
-                $dump .= "INSERT INTO `oc_product_description` VALUES ($id,1,'$item->name','$description','','$item->name','','','');" . PHP_EOL;
+                $dump .= "INSERT INTO `oc_product_description` VALUES ($item->partnumber,1,'$product_name','$product_description','','$product_name','','','');" . PHP_EOL;
 
                 // додаткові фото
                 if($item->extraimage){
                     foreach($item->extraimage as $image){
                         $id++;
-                        
+
                         $dump .= "INSERT INTO `oc_product_image` VALUES ($id,$item->partnumber,'$image',0);" . PHP_EOL;
                     }
                 }
