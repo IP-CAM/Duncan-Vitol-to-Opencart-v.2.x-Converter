@@ -14,6 +14,7 @@
 
 <?php
 // todo: видалення файлу через 10 хвилин
+// todo: export gzip
 
 if(isset($_FILES[file_xml])){
     if($_FILES[file_xml][type] === 'text/xml'){
@@ -47,7 +48,7 @@ if(isset($_FILES[file_xml])){
             $time = date('Y-m-d h:i:s', time());
 
             // основний файл дампу
-            $dump = 'TRUNCATE TABLE oc_manufacturer;TRUNCATE TABLE oc_category;TRUNCATE TABLE oc_category_description;TRUNCATE TABLE oc_product;TRUNCATE TABLE oc_product_description;TRUNCATE TABLE oc_product_image;' . PHP_EOL;
+            $dump = 'TRUNCATE TABLE oc_manufacturer;TRUNCATE oc_manufacturer_description;TRUNCATE oc_manufacturer_to_store;TRUNCATE TABLE oc_category;TRUNCATE TABLE oc_category_description;TRUNCATE TABLE oc_product;TRUNCATE TABLE oc_product_description;TRUNCATE TABLE oc_product_image;TRUNCATE oc_product_to_category;' . PHP_EOL;
 
             // виробники
             $manufactured = [];
@@ -60,16 +61,24 @@ if(isset($_FILES[file_xml])){
 
             foreach($manufactured as $key => $val){
                 $num = (int)$key + 1;
-                $dump .= "INSERT INTO `oc_manufacturer` VALUES ($num,'$val','',0);" . PHP_EOL;
+
+                $val = filter_var($val,FILTER_SANITIZE_ADD_SLASHES);
+
+                $dump .= "INSERT INTO `oc_manufacturer` VALUES ($num,'$val','',$num);" . PHP_EOL;
+
+                $dump .= "INSERT INTO `oc_manufacturer_description` VALUES ($num, 1, '$val', '', '', '', '', '');" . PHP_EOL;
+
+                $dump .= "INSERT INTO `oc_manufacturer_to_store` VALUES ($num,0);" . PHP_EOL;
             }
 
             // категорії
             $categories = $xml->categories->category;
 
             foreach($categories as $category){
-                $dump .=  "INSERT INTO `oc_category` VALUES ($category[id],'',0,0,0,0,1,'$time','$time');";
+                $dump .=  "INSERT INTO `oc_category` VALUES ($category[id],'',0,0,0,0,1,'$time','$time');" . PHP_EOL;
 
-                $cat = addslashes(mb_strtoupper($category));
+                // $cat = addslashes(mb_strtoupper($category));
+                $cat = filter_var(mb_strtoupper($category),FILTER_SANITIZE_ADD_SLASHES);
 
                 $dump .=  "INSERT INTO `oc_category_description` VALUES ($category[id],1,'$cat','','','','','');" . PHP_EOL;
             }
@@ -85,12 +94,18 @@ if(isset($_FILES[file_xml])){
                     }
                 }
 
-                $dump .= "INSERT INTO `oc_product` VALUES ($item->partnumber,'$item->art','','','','','','','',999,1,'$item->image',$id_manufactured,1,$item->price,0,1,'$time',0,2,0.00,0.00,0.00,1,1,1,0,1,0,'$time','$time');" . PHP_EOL;
+                $dump .= "INSERT INTO `oc_product` VALUES ($item->partnumber,'$item->art','','','','','','','',999,7,'$item->image',$id_manufactured,1,$item->price,0,1,'$time',0,2,0.00,0.00,0.00,1,1,1,0,1,0,'$time','$time');" . PHP_EOL;
 
-                $product_description = addslashes($item->fulldescription);
-                $product_name = addslashes($item->name);
+                // $product_description = addslashes($item->fulldescription);
+                $product_description = filter_var($item->fulldescription, FILTER_SANITIZE_ADD_SLASHES);
+                // todo: str_replace(); ![CDATA[]]
+
+                // $product_name = addslashes($item->name);
+                $product_name = filter_var($item->name, FILTER_SANITIZE_ADD_SLASHES);
 
                 $dump .= "INSERT INTO `oc_product_description` VALUES ($item->partnumber,1,'$product_name','$product_description','','$product_name','','','');" . PHP_EOL;
+
+                $dump .= "INSERT INTO `oc_product_to_category` VALUES($item->partnumber,$item->categoryId,1);";
 
                 // додаткові фото
                 if($item->extraimage){
