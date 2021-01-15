@@ -48,7 +48,7 @@ if(isset($_FILES[file_xml])){
             $time = date('Y-m-d h:i:s', time());
 
             // основний файл дампу
-            $dump = 'TRUNCATE TABLE oc_manufacturer;TRUNCATE oc_manufacturer_description;TRUNCATE oc_manufacturer_to_store;TRUNCATE TABLE oc_category;TRUNCATE TABLE oc_category_description;TRUNCATE TABLE oc_product;TRUNCATE TABLE oc_product_description;TRUNCATE TABLE oc_product_image;TRUNCATE oc_product_to_category;' . PHP_EOL;
+            $dump = 'TRUNCATE TABLE oc_manufacturer;TRUNCATE oc_manufacturer_description;TRUNCATE oc_manufacturer_to_store;TRUNCATE TABLE oc_category;TRUNCATE TABLE oc_category_description;TRUNCATE TABLE oc_product;TRUNCATE TABLE oc_product_description;TRUNCATE TABLE oc_product_image;TRUNCATE oc_product_to_category;TRUNCATE oc_product_to_store;' . PHP_EOL;
 
             // виробники
             $manufactured = [];
@@ -105,7 +105,9 @@ if(isset($_FILES[file_xml])){
 
                 $dump .= "INSERT INTO `oc_product_description` VALUES ($item->partnumber,1,'$product_name','$product_description','','$product_name','','','');" . PHP_EOL;
 
-                $dump .= "INSERT INTO `oc_product_to_category` VALUES($item->partnumber,$item->categoryId,1);";
+                $dump .= "INSERT INTO `oc_product_to_category` VALUES($item->partnumber,$item->categoryId,1);" . PHP_EOL;
+
+                $dump .= "INSERT INTO `oc_product_to_store` VALUES ($item->partnumber,0);" . PHP_EOL;
 
                 // додаткові фото
                 if($item->extraimage){
