@@ -59,6 +59,7 @@ if(isset($_FILES[file_xml])){
             foreach($items as $image){
                 $url = $image->image;
                 // $url = $image->extraimage;
+                // todo: add $image->extraimage
                 
                 $path = __DIR__ . '/' . $dir . '/' . basename($url);
                 
@@ -116,6 +117,8 @@ if(isset($_FILES[file_xml])){
 
                 // опис товара
                 $product_description = filter_var($item->fulldescription, FILTER_SANITIZE_ADD_SLASHES);
+                $product_description = str_replace("<![CDATA[", "", $product_description);
+                $product_description = str_replace("]]>", "", $product_description);
 
                 // назва товара
                 $product_name = filter_var($item->name, FILTER_SANITIZE_ADD_SLASHES);
@@ -127,7 +130,6 @@ if(isset($_FILES[file_xml])){
                 $product_id = $item->partnumber;
 
                 // image
-                // $img = $item->image;
                 $img = str_replace('https://vitol.com.ua/img/', 'catalog/vitol/', $item->image);
 
                 $dump .= "INSERT INTO `oc_product` VALUES ($product_id,'$product_model','','','','','','','',999,7,'$img',$manufactured_id,1,$item->price,0,1,'$time',0,2,0.00,0.00,0.00,1,1,1,0,1,0,'$time','$time');" . PHP_EOL;
@@ -135,9 +137,6 @@ if(isset($_FILES[file_xml])){
 
                 $dump .= "INSERT INTO `oc_product_description` VALUES ($product_id,1,'$product_name','$product_description','','$product_name','','','');" . PHP_EOL;
                 // todo: додати у мета-тег $product_description mb_substr()
-                // todo: видалити cdata
-                // $string = str_replace("<![CDATA[","",$string);
-                // $string = str_replace("]]>","",$string);
 
                 $dump .= "INSERT INTO `oc_product_to_category` VALUES ($product_id,$item->categoryId,1);" . PHP_EOL;
 
