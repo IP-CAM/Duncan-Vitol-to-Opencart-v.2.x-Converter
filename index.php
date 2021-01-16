@@ -47,6 +47,26 @@ if(isset($_FILES[file_xml])){
             // часова мітка
             $time = date('Y-m-d h:i:s', time());
 
+            // downloade images
+            $dir = 'vitol';
+
+            if(!file_exists($dir)){
+                if (!mkdir($dir, 0777)) {
+                    die('Не вдалося створити директорію' . $dir);
+                }
+            }
+            
+            foreach($items as $image){
+                $url = $image->image;
+                // $url = $image->extraimage;
+                
+                $path = __DIR__ . '/' . $dir . '/' . basename($url);
+                
+                file_put_contents($path, file_get_contents($url));
+            }
+            
+            exit();
+
             // основний файл дампу
             $dump = 'TRUNCATE TABLE oc_manufacturer;TRUNCATE oc_manufacturer_description;TRUNCATE oc_manufacturer_to_store;TRUNCATE TABLE oc_category;TRUNCATE TABLE oc_category_description;TRUNCATE TABLE oc_product;TRUNCATE TABLE oc_product_description;TRUNCATE TABLE oc_product_image;TRUNCATE oc_product_to_category;TRUNCATE oc_product_to_store;' . PHP_EOL;
 
@@ -84,37 +104,51 @@ if(isset($_FILES[file_xml])){
             }
             
             // айді додаткового фото
-            $id = 1;
+            $image_id = 1;
 
             foreach($items as $item){
 
                 foreach($manufactured as $key => $val){
                     if($val == $item->vendor){
-                        $id_manufactured = $key;
+                        $manufactured_id = $key;
                     }
                 }
 
-                $dump .= "INSERT INTO `oc_product` VALUES ($item->partnumber,'$item->art','','','','','','','',999,7,'$item->image',$id_manufactured,1,$item->price,0,1,'$time',0,2,0.00,0.00,0.00,1,1,1,0,1,0,'$time','$time');" . PHP_EOL;
-
-                // $product_description = addslashes($item->fulldescription);
+                // опис товара
                 $product_description = filter_var($item->fulldescription, FILTER_SANITIZE_ADD_SLASHES);
-                // todo: str_replace(); ![CDATA[]]
 
-                // $product_name = addslashes($item->name);
+                // назва товара
                 $product_name = filter_var($item->name, FILTER_SANITIZE_ADD_SLASHES);
 
-                $dump .= "INSERT INTO `oc_product_description` VALUES ($item->partnumber,1,'$product_name','$product_description','','$product_name','','','');" . PHP_EOL;
+                // model
+                $item->art ? $product_model = $item->art : $product_model = $product_name;
 
-                $dump .= "INSERT INTO `oc_product_to_category` VALUES($item->partnumber,$item->categoryId,1);" . PHP_EOL;
+                // id товара
+                $product_id = $item->partnumber;
 
-                $dump .= "INSERT INTO `oc_product_to_store` VALUES ($item->partnumber,0);" . PHP_EOL;
+                // image
+                $img = $item->image;
+                // todo: str_replace();
+
+                $dump .= "INSERT INTO `oc_product` VALUES ($product_id,'$product_model','','','','','','','',999,7,'$img',$manufactured_id,1,$item->price,0,1,'$time',0,2,0.00,0.00,0.00,1,1,1,0,1,0,'$time','$time');" . PHP_EOL;
+
+
+                $dump .= "INSERT INTO `oc_product_description` VALUES ($product_id,1,'$product_name','$product_description','','$product_name','','','');" . PHP_EOL;
+                // todo: додати у мета-тег $product_description mb_substr()
+                // todo: видалити cdata
+                // $string = str_replace("//<![CDATA[","",$string);
+                // $string = str_replace("//]]>","",$string);
+
+                $dump .= "INSERT INTO `oc_product_to_category` VALUES ($product_id,$item->categoryId,1);" . PHP_EOL;
+
+                $dump .= "INSERT INTO `oc_product_to_store` VALUES ($product_id,0);" . PHP_EOL;
 
                 // додаткові фото
                 if($item->extraimage){
                     foreach($item->extraimage as $image){
-                        $id++;
+                        $image_id++;
 
-                        $dump .= "INSERT INTO `oc_product_image` VALUES ($id,$item->partnumber,'$image',0);" . PHP_EOL;
+                        $dump .= "INSERT INTO `oc_product_image` VALUES ($image_id,$product_id,'$image',0);" . PHP_EOL;
                     }
                 }
 
