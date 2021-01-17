@@ -54,6 +54,11 @@ if(isset($_FILES[file_xml])){
                 if (!mkdir($dir, 0777)) {
                     die('Не вдалося створити директорію' . $dir);
                 }
+
+                if (!copy(__DIR__ . '/upload/.htaccess', __DIR__ . '/' . $dir)) {
+                    die('Не вдалося скопіювати файл!');
+                }
+
             }
             
             foreach($items as $image){
@@ -147,7 +152,10 @@ if(isset($_FILES[file_xml])){
                     foreach($item->extraimage as $image){
                         $image_id++;
 
-                        $dump .= "INSERT INTO `oc_product_image` VALUES ($image_id,$product_id,'$image',0);" . PHP_EOL;
+                        // image
+                        $images = str_replace('https://vitol.com.ua/img/', 'catalog/vitol/', $image);
+
+                        $dump .= "INSERT INTO `oc_product_image` VALUES ($image_id,$product_id,'$images',0);" . PHP_EOL;
                     }
                 }
 
