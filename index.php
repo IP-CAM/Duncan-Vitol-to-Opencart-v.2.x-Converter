@@ -151,6 +151,7 @@ if(isset($_FILES[file_xml])){
 
                 $dump .= "INSERT INTO `oc_product_description` VALUES ($product_id,1,'$product_name','$product_description','','$product_name','','','');" . PHP_EOL;
                 // todo: додати у мета-тег $product_description mb_substr()
+                // todo: перевірити чому немає прив'язки категорій
 
                 $dump .= "INSERT INTO `oc_product_to_category` VALUES ($product_id,$item->categoryId,1);" . PHP_EOL;
 
@@ -183,6 +184,6 @@ if(isset($_FILES[file_xml])){
 ?>
 
 <p style="position:fixed;top:0;right:0;background:maroon;padding:5px;color:white;font-weight:bold">Пам'ять: <?=memory_get_usage()?></p>
-<p><?=echo round(microtime(true) - $start, 4).' сек.'?></p>
+<p><?=round(microtime(true) - $start, 4).' сек.'?></p>
 </body>
 </html>
