@@ -1,3 +1,6 @@
+<?php
+    $start = microtime(true);
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -55,24 +58,30 @@ if(isset($_FILES[file_xml])){
                     die('Не вдалося створити директорію' . $dir);
                 }
 
-                if (!copy(__DIR__ . '/upload/.htaccess', __DIR__ . '/' . $dir)) {
+                if (!copy(__DIR__ . '/upload/.htaccess', __DIR__ . '/' . $dir . '/')) {
                     die('Не вдалося скопіювати файл!');
                 }
 
             }
             
+            // основне фото
             foreach($items as $image){
                 $url = $image->image;
-                // $url = $image->extraimage;
-                // todo: add $image->extraimage
                 
                 $path = __DIR__ . '/' . $dir . '/' . basename($url);
                 
                 file_put_contents($path, file_get_contents($url));
             }
             
-            // exit();
-
+            // додаткові фото
+            foreach($items as $image){
+                $url = $image->extraimage;
+                
+                $path = __DIR__ . '/' . $dir . '/' . basename($url);
+                
+                file_put_contents($path, file_get_contents($url));
+            }
+            
             // основний файл дампу
             $dump = 'TRUNCATE TABLE oc_manufacturer;TRUNCATE oc_manufacturer_description;TRUNCATE oc_manufacturer_to_store;TRUNCATE TABLE oc_category;TRUNCATE TABLE oc_category_description;TRUNCATE TABLE oc_product;TRUNCATE TABLE oc_product_description;TRUNCATE TABLE oc_product_image;TRUNCATE oc_product_to_category;TRUNCATE oc_product_to_store;' . PHP_EOL;
 
@@ -174,5 +183,6 @@ if(isset($_FILES[file_xml])){
 ?>
 
 <p style="position:fixed;top:0;right:0;background:maroon;padding:5px;color:white;font-weight:bold">Пам'ять: <?=memory_get_usage()?></p>
+<p><?=echo round(microtime(true) - $start, 4).' сек.'?></p>
 </body>
 </html>
