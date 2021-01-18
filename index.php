@@ -52,18 +52,27 @@ if(isset($_FILES[file_xml])){
 
             // downloade images
             $dir = 'vitol';
-
+ 
             if(!file_exists($dir)){
                 if (!mkdir($dir, 0777)) {
                     die('Не вдалося створити директорію' . $dir);
                 }
 
-                if (!copy(__DIR__ . '/upload/.htaccess', __DIR__ . '/' . $dir . '/')) {
-                    die('Не вдалося скопіювати файл!');
+                if(!touch(__DIR__ . '/' . $dir . '/' . 'index.html')){
+                    die('Не вдалося створити файл index.html');
                 }
 
             }
-            
+
+            // додаткове фото
+            foreach($items as $image){
+                $url = $image->extraimage;
+                
+                $path = __DIR__ . '/' . $dir . '/' . basename($url);
+                
+                file_put_contents($path, file_get_contents($url));
+            }
+
             // основне фото
             foreach($items as $image){
                 $url = $image->image;
@@ -72,18 +81,10 @@ if(isset($_FILES[file_xml])){
                 
                 file_put_contents($path, file_get_contents($url));
             }
-            
-            // додаткові фото
-            foreach($items as $image){
-                $url = $image->extraimage;
-                
-                $path = __DIR__ . '/' . $dir . '/' . basename($url);
-                
-                file_put_contents($path, file_get_contents($url));
-            }
-            
+
+      
             // основний файл дампу
-            $dump = 'TRUNCATE TABLE oc_manufacturer;TRUNCATE oc_manufacturer_description;TRUNCATE oc_manufacturer_to_store;TRUNCATE TABLE oc_category;TRUNCATE TABLE oc_category_description;TRUNCATE TABLE oc_product;TRUNCATE TABLE oc_product_description;TRUNCATE TABLE oc_product_image;TRUNCATE oc_product_to_category;TRUNCATE oc_product_to_store;' . PHP_EOL;
+            $dump = 'TRUNCATE TABLE oc_manufacturer;TRUNCATE oc_manufacturer_description;TRUNCATE oc_manufacturer_to_store;TRUNCATE TABLE oc_category;TRUNCATE TABLE oc_category_description;TRUNCATE TABLE oc_product;TRUNCATE TABLE oc_product_description;TRUNCATE TABLE oc_product_image;TRUNCATE oc_product_to_category;TRUNCATE oc_product_to_store;TRUNCATE oc_url_alias; TRUNCATE oc_category_path;TUNCATE oc_category_to_layout' . PHP_EOL;
 
             // виробники
             $manufactured = [];
@@ -110,12 +111,17 @@ if(isset($_FILES[file_xml])){
             $categories = $xml->categories->category;
 
             foreach($categories as $category){
-                $dump .=  "INSERT INTO `oc_category` VALUES ($category[id],'',0,0,0,0,1,'$time','$time');" . PHP_EOL;
+                $dump .=  "INSERT INTO `oc_category` VALUES ($category[id],'',0,1,0,0,1,'$time','$time');" . PHP_EOL;
 
-                // $cat = addslashes(mb_strtoupper($category));
                 $cat = filter_var(mb_strtoupper($category),FILTER_SANITIZE_ADD_SLASHES);
 
-                $dump .=  "INSERT INTO `oc_category_description` VALUES ($category[id],1,'$cat','','','','','');" . PHP_EOL;
+                $category_id = $category[id];
+
+                $dump .=  "INSERT INTO `oc_category_description` VALUES ($category_id,1,'$cat','','','','','');" . PHP_EOL;
+
+                $dump .=  "INSERT INTO `oc_category_path` VALUES ($category_id,$category[id],0);" . PHP_EOL;
+
+                $dump .= "INSERT INTO `oc_category_to_layout` VALUES ($category_id,0,0);" . PHP_EOL;
             }
             
             // айді додаткового фото
@@ -131,8 +137,8 @@ if(isset($_FILES[file_xml])){
 
                 // опис товара
                 $product_description = filter_var($item->fulldescription, FILTER_SANITIZE_ADD_SLASHES);
-                $product_description = str_replace("<![CDATA[", "", $product_description);
-                $product_description = str_replace("]]>", "", $product_description);
+                $product_description = str_replace("![CDATA[", "", $product_description);
+                $product_description = str_replace("]]", "", $product_description);
 
                 // назва товара
                 $product_name = filter_var($item->name, FILTER_SANITIZE_ADD_SLASHES);
@@ -167,13 +173,13 @@ if(isset($_FILES[file_xml])){
 
                         $dump .= "INSERT INTO `oc_product_image` VALUES ($image_id,$product_id,'$images',0);" . PHP_EOL;
                     }
-                }
+                }      
 
             }
-            
+
             // view
             echo '<textarea style="width:100%;height:600px;resize:vertical;margin:10px 0 0">'. $dump .'</textarea>';
-
+            
         } else {
             exit('Не вдалося відкрити файл' . $name);
         }
