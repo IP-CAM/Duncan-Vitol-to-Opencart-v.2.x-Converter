@@ -84,7 +84,7 @@ if(isset($_FILES[file_xml])){
 
       
             // основний файл дампу
-            $dump = 'TRUNCATE TABLE oc_manufacturer;TRUNCATE oc_manufacturer_description;TRUNCATE oc_manufacturer_to_store;TRUNCATE TABLE oc_category;TRUNCATE TABLE oc_category_description;TRUNCATE TABLE oc_product;TRUNCATE TABLE oc_product_description;TRUNCATE TABLE oc_product_image;TRUNCATE oc_product_to_category;TRUNCATE oc_product_to_store;TRUNCATE oc_url_alias; TRUNCATE oc_category_path;TUNCATE oc_category_to_layout' . PHP_EOL;
+            $dump = 'TRUNCATE TABLE oc_manufacturer;TRUNCATE oc_manufacturer_description;TRUNCATE oc_manufacturer_to_store;TRUNCATE TABLE oc_category;TRUNCATE TABLE oc_category_description;TRUNCATE TABLE oc_product;TRUNCATE TABLE oc_product_description;TRUNCATE TABLE oc_product_image;TRUNCATE oc_product_to_category;TRUNCATE oc_product_to_store;TRUNCATE oc_url_alias; TRUNCATE oc_category_path;TRUNCATE oc_category_to_layout;TRUNCATE oc_category_to_store;' . PHP_EOL;
 
             // виробники
             $manufactured = [];
@@ -122,6 +122,8 @@ if(isset($_FILES[file_xml])){
                 $dump .=  "INSERT INTO `oc_category_path` VALUES ($category_id,$category[id],0);" . PHP_EOL;
 
                 $dump .= "INSERT INTO `oc_category_to_layout` VALUES ($category_id,0,0);" . PHP_EOL;
+
+                $dump .= "INSERT INTO `oc_category_to_store` VALUES ($category_id,0);" . PHP_EOL;
             }
             
             // айді додаткового фото
